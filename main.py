@@ -10,10 +10,8 @@ from keras.layers import Input, LSTM, Dense
 from keras.models import Model
 import matplotlib.pyplot as plt
 
-import matplotlib
-matplotlib.use('Agg')
-
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 math_df = pd.read_csv("/Users/jimmullen/PycharmProjects/james_mullen_midtermproj/finaltermproj/math_df/student-mat.csv", sep=';')
@@ -59,13 +57,26 @@ feature_importances = dict(sorted(feature_importances.items(), key=lambda x: x[1
 most_important_feature = max(feature_importances, key=feature_importances.get)
 second_most_important_feature = sorted(feature_importances, key=feature_importances.get, reverse=True)[1]
 
-# Scatter Plot
-X_pair = X_train[:, [max_index, second_max_index]]
-plt.scatter(X_train[:, max_index], X_train[:, second_max_index], c=np.where(y_train == 'F', 1, 0), cmap=plt.cm.coolwarm)
+print(f'Most important features:', most_important_feature)
+print(f'Second most important features:', {second_most_important_feature})
+
+# Scatter Plot with Color Explanation
+colors = np.where(y_train == 'F', 'red', 'blue')
+plt.scatter(X_train[:, max_index], X_train[:, second_max_index], c=colors, cmap='coolwarm')
 plt.xlabel(most_important_feature)
 plt.ylabel(second_most_important_feature)
 plt.title("Decision Surface of Decision Tree Classifier")
-plt.savefig("scatter_plot.png")
+
+# Add color legend
+red_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='F')
+blue_patch = plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Not Failed')
+plt.legend(handles=[red_patch, blue_patch], title='Class', loc='best')
+
+plt.savefig("scatter_plot_with_color_legend.png")
+plt.show()
+
+print("Red points in the scatter plot represent students predicted to fail (class 'F')")
+print("Blue points in the scatter plot represent students predicted as not failing (class 'Not Failed')")
 
 # Random Forest Classifier
 rf_classifier = RandomForestClassifier()
@@ -101,10 +112,7 @@ model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=
 model.fit(X_train_lstm, y_train_lstm, epochs=10, batch_size=32, validation_data=(X_test_lstm, y_test_lstm))
 
 # 10-Fold Cross-Validation
-classifiers = [
-    ('Random Forest', rf_classifier),
-    ('SVM', svm_classifier)
-]
+classifiers = [('Random Forest', rf_classifier), ('SVM', svm_classifier)]
 
 for name, classifier in classifiers:
     cv_scores = cross_val_score(classifier, X, y, cv=10)
@@ -113,6 +121,8 @@ for name, classifier in classifiers:
 # ROC Curves
 plt.figure(figsize=(10, 6))
 plt.plot([0, 1], [0, 1], 'k--')
+
+classifiers = [('Random Forest', rf_classifier), ('SVM', svm_classifier)]
 
 for name, model in classifiers:
     if name == 'SVM':
@@ -129,5 +139,6 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver Operating Characteristic (ROC) Curves')
 plt.legend()
+plt.show()
 plt.savefig("roc_curves.png")
 plt.close()
